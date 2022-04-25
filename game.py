@@ -38,6 +38,15 @@ class Game:
     nonTurn = abs(self.starter - 1)
     return self.starter, nonTurn
 
+  def getTurnBoards(self, turn):
+    turnBoard = self.board.unicode()
+    nonTurnBoard = self.board.mirror().unicode()
+
+    if turn != self.starter:
+      turnBoard, nonTurnBoard = nonTurnBoard, turnBoard
+
+    return turnBoard, nonTurnBoard
+
   def handleGameOutcome(self, turn, nonTurn):
     turnConnection = self.getConnection(turn)
     nonTurnConnection = self.getConnection(nonTurn)
@@ -68,8 +77,9 @@ class Game:
 
         if move in board.legal_moves:
           board.push(move)
-          turnConnection.send(encodeAction('print', board.unicode(invert_color = True)))
-          nonTurnConnection.send(encodeAction('print', board.mirror().unicode()))
+          turnBoard, nonTurnBoard = self.getTurnBoards(turn)
+          turnConnection.send(encodeAction('print', turnBoard))
+          nonTurnConnection.send(encodeAction('print', nonTurnBoard))
           turnConnection.recv(32)
           nonTurnConnection.recv(32)
 
@@ -80,13 +90,13 @@ class Game:
 
           turn, nonTurn = nonTurn, turn
         else:
-          turnConnection.send(encodeAction('print', 'Movimento inválido. Tente novamente.'))
+          turnConnection.send(encodeAction('print', 'Invalid move. Try again.'))
           nonTurnConnection.send(encodeAction('wait'))
           turnConnection.recv(32)
 
       except Exception as e:
         if 'is not in list' in e.args[0]:
-          turnConnection.send(encodeAction('print', 'Movimento inválido. Tente novamente.'))
+          turnConnection.send(encodeAction('print', 'Invalid move. Try again.'))
           nonTurnConnection.send(encodeAction('wait'))
           turnConnection.recv(32)
 
