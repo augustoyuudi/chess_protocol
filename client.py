@@ -12,7 +12,7 @@ while True:
   action, data = decodeAction(serverData)
 
   if action == 'wait':
-    print('Wait opponent move:\n')
+    print('Wait opponent move...')
     continue
 
   if action == 'move':
@@ -20,12 +20,11 @@ while True:
     client.send(encodeAction('move', move))
 
   if action == 'print':
-    print(data)
-    print('\n')
+    print(data, '\n')
     client.send(encodeAction('print'))
 
   if action == 'end':
-    print(data)
+    print(data, '\n')
     client.shutdown(SHUT_RDWR)
     client.close()
     break
