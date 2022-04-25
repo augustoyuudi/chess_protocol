@@ -27,7 +27,9 @@ def main():
       if len(game.getPlayers()) > 1:
         x = threading.Thread(target=game.onGameStart)
         x.start()
-        continue
+      else:
+        connection.send(encodeAction('print', 'Finding opponent...'))
+        connection.recv(32)
 
 if __name__ == "__main__":
   try:

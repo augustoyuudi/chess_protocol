@@ -51,6 +51,7 @@ class Game:
       nonTurnConnection.send(encodeAction('end', 'You lose'))
 
   def onGameStart(self):
+    print(f'Game #{self.getId()} started.\n')
     turn, nonTurn = self.getPlayersTurn()
     board = self.getBoard()
 
