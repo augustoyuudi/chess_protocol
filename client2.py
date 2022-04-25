@@ -21,7 +21,7 @@ while True:
   if action == 'print':
     print(data)
     print('\n')
-    client.send(b'printed')
+    client.send(encodeAction('print'))
 
   if action == 'end':
     print(data)
