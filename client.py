@@ -12,6 +12,7 @@ while True:
   action, data = decodeAction(serverData)
 
   if action == 'wait':
+    print('Wait opponent move:\n')
     continue
 
   if action == 'move':

@@ -4,13 +4,14 @@ from helpers import *
 from socket import *
 
 games = Games()
-host = '127.0.0.1'
+host = ''
 serverPort = 12345
 serverSocket = socket(AF_INET, SOCK_STREAM)
 serverSocket.bind((host, serverPort))
 serverSocket.listen(1)
 
 def main():
+  print('Server running...\n')
   while True:
     connection, addr = serverSocket.accept()
     clientData = connection.recv(512)
@@ -24,7 +25,7 @@ def main():
       }
       game = games.registerPlayer(player)
       if len(game.getPlayers()) > 1:
-        x = threading.Thread(target=onGameStart, args=(game, onGameEnd))
+        x = threading.Thread(target=game.onGameStart)
         x.start()
         continue
 

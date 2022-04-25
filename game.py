@@ -8,11 +8,13 @@ class Game:
   players = ()
   board = None
   id = None
+  starter = None
 
   def __init__(self, player, id):
     self.players = (player,)
     self.board = chess.Board()
     self.id = id
+    self.defineStartingPlayer()
 
   def setNewPlayer(self, player):
     self.players += (player,)
@@ -28,6 +30,64 @@ class Game:
 
   def getId(self):
     return self.id
+
+  def defineStartingPlayer(self):
+    self.starter = random.randint(0, 1)
+
+  def getPlayersTurn(self):
+    nonTurn = abs(self.starter - 1)
+    return self.starter, nonTurn
+
+  def handleGameOutcome(self, turn, nonTurn):
+    turnConnection = self.getConnection(turn)
+    nonTurnConnection = self.getConnection(nonTurn)
+
+    if self.board.outcome().winner == None:
+      sendData = encodeAction('end', 'Draw')
+      turnConnection.send(sendData)
+      nonTurnConnection.send(sendData)
+    else:
+      turnConnection.send(encodeAction('end', 'You win'))
+      nonTurnConnection.send(encodeAction('end', 'You lose'))
+
+  def onGameStart(self):
+    turn, nonTurn = self.getPlayersTurn()
+    board = self.getBoard()
+
+    while True:
+      try:
+        turnConnection = self.getConnection(turn)
+        nonTurnConnection = self.getConnection(nonTurn)
+        turnConnection.send(encodeAction('move'))
+        nonTurnConnection.send(encodeAction('wait'))
+
+        turnData = turnConnection.recv(512)
+        turnAction, turnMove = decodeAction(turnData)
+        move = chess.Move.from_uci(turnMove)
+
+        if move in board.legal_moves:
+          board.push(move)
+          turnConnection.send(encodeAction('print', board.unicode(invert_color = True)))
+          nonTurnConnection.send(encodeAction('print', board.mirror().unicode()))
+          turnConnection.recv(32)
+          nonTurnConnection.recv(32)
+
+          if board.outcome():
+            self.handleGameOutcome(turn, nonTurn)
+            print(f'Game #{self.getId()} ended.\n')
+            sys.exit()
+
+          turn, nonTurn = nonTurn, turn
+        else:
+          turnConnection.send(encodeAction('print', 'Movimento inválido. Tente novamente.'))
+          nonTurnConnection.send(encodeAction('wait'))
+          turnConnection.recv(32)
+
+      except Exception as e:
+        if 'is not in list' in e.args[0]:
+          turnConnection.send(encodeAction('print', 'Movimento inválido. Tente novamente.'))
+          nonTurnConnection.send(encodeAction('wait'))
+          turnConnection.recv(32)
 
 class Games:
   games = []
@@ -50,52 +110,3 @@ class Games:
       return self.newGame(player)
     game.setNewPlayer(player)
     return game
-
-def onGameStart(game: Game, onGameEnd):
-  turn = random.randint(0, 1)
-  nonTurn = abs(turn - 1)
-  board = game.getBoard()
-
-  while True:
-    try:
-      turnConnection = game.getConnection(turn)
-      nonTurnConnection = game.getConnection(nonTurn)
-      turnConnection.send(encodeAction('move'))
-      nonTurnConnection.send(encodeAction('wait'))
-
-      turnData = turnConnection.recv(512)
-      turnAction, turnMove = decodeAction(turnData)
-      move = chess.Move.from_uci(turnMove)
-
-      if move in board.legal_moves:
-        board.push(move)
-        turnConnection.send(encodeAction('print', board.unicode(invert_color = True)))
-        nonTurnConnection.send(encodeAction('print', board.mirror().unicode()))
-        turnConnection.recv(32)
-        nonTurnConnection.recv(32)
-
-        if board.outcome():
-          winner = board.outcome().winner
-          if winner == None:
-            sendData = encodeAction('end', 'Draw')
-          else:
-            sendData = encodeAction('end', f'{"White" if winner else "Black"} wins')
-          turnConnection.send(sendData)
-          nonTurnConnection.send(sendData)
-          onGameEnd(game.getId())
-          sys.exit()
-
-        turn, nonTurn = nonTurn, turn
-      else:
-        turnConnection.send(encodeAction('print', 'Movimento inválido. Tente novamente.'))
-        nonTurnConnection.send(encodeAction('wait'))
-        turnConnection.recv(32)
-
-    except Exception as e:
-      if 'is not in list' in e.args[0]:
-        turnConnection.send(encodeAction('print', 'Movimento inválido. Tente novamente.'))
-        nonTurnConnection.send(encodeAction('wait'))
-        turnConnection.recv(32)
-
-def onGameEnd(id):
-  print(f'Game #{id} ended.')
