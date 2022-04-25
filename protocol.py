@@ -24,7 +24,7 @@ def main():
       }
       game = games.registerPlayer(player)
       if len(game.getPlayers()) > 1:
-        x = threading.Thread(target=onGameStart, args=(game,))
+        x = threading.Thread(target=onGameStart, args=(game, onGameEnd))
         x.start()
         continue
 

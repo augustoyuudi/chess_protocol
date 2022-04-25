@@ -7,10 +7,12 @@ from helpers import encodeAction, decodeAction
 class Game:
   players = ()
   board = None
+  id = None
 
-  def __init__(self, player):
+  def __init__(self, player, id):
     self.players = (player,)
     self.board = chess.Board()
+    self.id = id
 
   def setNewPlayer(self, player):
     self.players += (player,)
@@ -24,11 +26,15 @@ class Game:
   def getBoard(self):
     return self.board
 
+  def getId(self):
+    return self.id
+
 class Games:
   games = []
 
   def newGame(self, player):
-    game = Game(player, )
+    gameId = len(self.games) + 1
+    game = Game(player, gameId)
     self.games.append(game)
     return game
 
@@ -45,7 +51,7 @@ class Games:
     game.setNewPlayer(player)
     return game
 
-def onGameStart(game: Game):
+def onGameStart(game: Game, onGameEnd):
   turn = random.randint(0, 1)
   nonTurn = abs(turn - 1)
   board = game.getBoard()
@@ -76,7 +82,7 @@ def onGameStart(game: Game):
             sendData = encodeAction('end', f'{"White" if winner else "Black"} wins')
           turnConnection.send(sendData)
           nonTurnConnection.send(sendData)
-          # clear game
+          onGameEnd(game.getId())
           sys.exit()
 
         turn, nonTurn = nonTurn, turn
@@ -90,3 +96,6 @@ def onGameStart(game: Game):
         turnConnection.send(encodeAction('print', 'Movimento inválido. Tente novamente.'))
         nonTurnConnection.send(encodeAction('wait'))
         turnConnection.recv(32)
+
+def onGameEnd(id):
+  print(f'Game #{id} ended.')
